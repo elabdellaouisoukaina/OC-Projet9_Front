@@ -20,6 +20,16 @@ const row = (bill) => {
   }
 
 const rows = (data) => {
+  data = data || [] // Pour éviter l'erreur à la fin des tests "TypeError: Cannot read properties of undefined (reading 'sort') JS"
+  
+  // Tri les factures par date la plus récente à la plus ancienne
+  data = data.sort((billA, billB) => {
+    if(billA.date < billB.date) {
+      return 1
+    }
+    return -1
+  })
+
   return (data && data.length) ? data.map(bill => row(bill)).join("") : ""
 }
 
