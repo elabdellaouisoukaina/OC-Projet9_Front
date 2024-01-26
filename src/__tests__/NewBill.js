@@ -9,6 +9,8 @@ import NewBill from "../containers/NewBill.js"
 import { ROUTES, ROUTES_PATH } from "../constants/routes.js";
 import {localStorageMock} from "../__mocks__/localStorage.js";
 import router from "../app/Router.js"
+import mockStore from "../__mocks__/store"
+
 
 
 
@@ -100,8 +102,8 @@ describe("Given I am connected as an employee", () => {
           expect(pngFile.type === 'image/png').toBeTruthy()
         })
 
-        describe('When I fill correctly the form and click on the "Envoyer" button', () => {
-          test('Then the form should be successfully submitted', () => {
+        describe('When I fill correctly the form and click on the "Envoyer" button', () => { // test unitaire
+          test('Then the form should be valid', () => {
             //Teste que le click sur le bouton appelle la bonne fonction
             const onNavigate = (pathname) => {
               document.body.innerHTML = ROUTES({ pathname })
@@ -154,6 +156,46 @@ describe("Given I am connected as an employee", () => {
             expect(handleSubmit).toHaveBeenCalled()
             expect(form).toBeTruthy();
 
+          })
+        })
+
+        describe("When i fill correctly the form", () => {
+          test('Then the form should be successfully submitted', () => {
+            document.body.innerHTML = NewBillUI()
+            Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+            window.localStorage.setItem('user', JSON.stringify({
+              type: 'Employee'
+            }))
+
+            //Teste que le click sur le bouton appelle la bonne fonction
+            const onNavigate = (pathname) => {
+              document.body.innerHTML = ROUTES({ pathname })
+            }
+
+            const store = mockStore;
+            const newBill = new NewBill({ document, onNavigate, store, localStorage })
+
+            const form = screen.getByTestId("form-new-bill");
+            const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+            form.addEventListener("submit", handleSubmit);
+            fireEvent.submit(form);
+            expect(handleSubmit).toHaveBeenCalled()
+          })
+        })
+        describe("When i fill correctly the form but there's an error with the API", () => {
+          test('Then an error should appear in the console', async () => { 
+            //jest.spyOn(mockStore, "bills")
+            const rejected = mockStore.bills.mockImplementationOnce(() => { // fct jest : mockImplementationOnce
+              return {
+                create: () => {return Promise.reject(new Error("Erreur 404"))}
+              }
+            })
+            window.onNavigate(ROUTES_PATH.NewBill)
+            await new Promise(process.nextTick);
+
+            expect(rejected().create).rejects.toEqual(new Error("Erreur 404"))
+
+             // tester error 500
           })
         })
       })
