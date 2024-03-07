@@ -167,7 +167,6 @@ describe("Given I am connected as an employee", () => {
               type: 'Employee'
             }))
 
-            //Teste que le click sur le bouton appelle la bonne fonction
             const onNavigate = (pathname) => {
               document.body.innerHTML = ROUTES({ pathname })
             }
@@ -182,20 +181,76 @@ describe("Given I am connected as an employee", () => {
             expect(handleSubmit).toHaveBeenCalled()
           })
         })
-        describe("When i fill correctly the form but there's an error with the API", () => {
-          test('Then an error should appear in the console', async () => { 
-            //jest.spyOn(mockStore, "bills")
-            const rejected = mockStore.bills.mockImplementationOnce(() => { // fct jest : mockImplementationOnce
-              return {
-                create: () => {return Promise.reject(new Error("Erreur 404"))}
+
+        describe("When i fill correctly the form but there's an error with the API", () => { // test d'intégration
+          test('Then an error 404 should appear in the console', async () => { 
+            const spyError = jest.spyOn(console, "error");
+            document.body.innerHTML = NewBillUI()
+            Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+            window.localStorage.setItem('user', JSON.stringify({
+              type: 'Employee'
+            }))
+
+            //Teste que le click sur le bouton appelle la bonne fonction
+            const onNavigate = (pathname) => {
+              document.body.innerHTML = ROUTES({ pathname })
+            }
+
+            const store = {
+              bills() {
+                return {
+                  list:  jest.fn(() => []),
+                  create: jest.fn(() => Promise.resolve({})), // crée facture
+                  update: jest.fn(() => Promise.reject(new Error("404"))), // envoi facture
+                }
               }
+              
+            };
+            const newBill = new NewBill({ document, onNavigate, store, localStorage })
+
+            const form = screen.getByTestId("form-new-bill");
+            const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+            form.addEventListener("submit", handleSubmit);
+            fireEvent.submit(form);
+
+            waitFor( () => {
+              expect(spyError).toBeCalled();
+            })            
+          })
+
+          test('Then an error 500 should appear in the console', async () => { 
+            const spyError = jest.spyOn(console, "error");
+            document.body.innerHTML = NewBillUI()
+            Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+            window.localStorage.setItem('user', JSON.stringify({
+              type: 'Employee'
+            }))
+
+            //Teste que le click sur le bouton appelle la bonne fonction
+            const onNavigate = (pathname) => {
+              document.body.innerHTML = ROUTES({ pathname })
+            }
+
+            const store = {
+              bills() {
+                return {
+                  list:  jest.fn(() => []),
+                  create: jest.fn(() => Promise.resolve({})),
+                  update: jest.fn(() => Promise.reject(new Error("500"))),
+                }
+              }
+              
+            };
+            const newBill = new NewBill({ document, onNavigate, store, localStorage })
+
+            const form = screen.getByTestId("form-new-bill");
+            const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+            form.addEventListener("submit", handleSubmit);
+            fireEvent.submit(form);
+
+            waitFor( () => {
+              expect(spyError).toBeCalled();
             })
-            window.onNavigate(ROUTES_PATH.NewBill)
-            await new Promise(process.nextTick);
-
-            expect(rejected().create).rejects.toEqual(new Error("Erreur 404"))
-
-             // tester error 500
           })
         })
       })
